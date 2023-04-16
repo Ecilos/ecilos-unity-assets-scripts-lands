@@ -1,3 +1,4 @@
+using Ecilos.Ipfs;
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -40,7 +41,9 @@ public class EcilosAssetModificationProcessor : UnityEditor.AssetModificationPro
       if (IsMetaPath(path)) {
         ProcessMetaAsset(path);
       } else {
-        ProcessAsset(path);
+        if (ProcessAsset(path)) {
+          UploadAsset(path);
+        }
       }
     }
     return paths;
@@ -57,19 +60,19 @@ public class EcilosAssetModificationProcessor : UnityEditor.AssetModificationPro
     return assetMoveResult;
   }
 
-  private static void ProcessAsset(string path) {
+  private static bool ProcessAsset(string path) {
     bool isSupported = false;
     Type assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
 
     isSupported |= assetType == typeof(Material);
     if (!isSupported) {
-      return;
+      return isSupported;
     }
 
     if (path.EndsWith(".prefab") && assetType == typeof(GameObject)) {
       // var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
       // PrefabUtility.SavePrefabAsset(prefab);
-      return;
+      return isSupported;
     }
 
     Hash128 hash = AssetDatabase.GetAssetDependencyHash(path);
@@ -106,6 +109,7 @@ public class EcilosAssetModificationProcessor : UnityEditor.AssetModificationPro
     // File.WriteAllLines(metaPath, meta);
     // Ensure the AssetDatabase knows we're finished editing
     // AssetDatabase.StopAssetEditing();
+    return isSupported;
   }
 
   private static void ProcessMetaAsset(string path) {
@@ -117,5 +121,13 @@ public class EcilosAssetModificationProcessor : UnityEditor.AssetModificationPro
 
     // Create a SerializedObject for the .meta file
     // SerializedObject serializedMetaFile = new SerializedObject(metaFile);
+  }
+
+  private static void UploadAsset(string path) {
+    Ecilos.Ipfs.EcilosIpfsUploader.UploadFile(path);
+  }
+
+  private string GetDebuggerDisplay() {
+    return ToString();
   }
 }
