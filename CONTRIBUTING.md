@@ -8,7 +8,7 @@ By following this guide, we can ensure that
 the repository remains fast and accessible for everyone,
 and that we are making the most efficient use of our storage space.
 
-### Coding conventions
+## Coding conventions
 
 To optimize the code for readability, please follow these guidelines:
 
