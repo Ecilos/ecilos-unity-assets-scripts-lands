@@ -37,10 +37,10 @@ public class EcilosAssetProcessor : AssetPostprocessor {
         };
 
         // Modify the metadata of the material asset.
+        importSettings.Update();
         importSettings.FindProperty("m_UserData").stringValue = JsonUtility.ToJson(myData);
 
         // Apply the modifications to the import settings.
-        importSettings.Update();
         importSettings.ApplyModifiedProperties();
         EditorUtility.SetDirty(importSettings.targetObject);
         isModified = true;
