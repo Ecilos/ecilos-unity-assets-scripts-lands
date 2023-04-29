@@ -13,25 +13,38 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
   bool isLoaded = false;
   [SerializeField] private AssetLabelReference assetLabelReference;
   [SerializeField] public string remoteCatalogLoadPath;
+  private string remoteCatalogEndpoint;
 
   // Start is called before the first frame update
   public IEnumerator Start()
   {
+    if (remoteCatalogLoadPath.Length == 0)
+    {
+      yield return null;
+    }
     // Load a catalog and automatically release the operation handle.
     IEnumerable<IResourceLocator> locators = Addressables.ResourceLocators;
     if (locators.Any())
     {
       IResourceLocator locator = locators.FirstOrDefault();
       ResourceLocatorInfo locatorInfo = Addressables.GetLocatorInfo(locator);
-      string catalogUrl = locatorInfo.CatalogLocation + "/test-catalog.json";
-      Debug.Log(catalogUrl);
-      AsyncOperationHandle<IResourceLocator> handle = Addressables.LoadContentCatalogAsync(catalogUrl, true);
-      yield return handle;
+      if (locatorInfo.CatalogLocation != null)
+      {
+        remoteCatalogEndpoint = locatorInfo.CatalogLocation.ToString();
+      }
+      else
+      {
+        remoteCatalogEndpoint = "http://localhost:8080/ipfs";
+      }
     }
     else
     {
       Debug.Log("No resource locators found in Addressables settings.");
+      remoteCatalogEndpoint = "http://localhost:8080/ipfs";
     }
+    Debug.Log($"Loading catalog at: {remoteCatalogEndpoint}/{remoteCatalogLoadPath}");
+    AsyncOperationHandle<IResourceLocator> handle = Addressables.LoadContentCatalogAsync(remoteCatalogEndpoint + '/' + remoteCatalogLoadPath, true);
+    yield return handle;
   }
 
   // Update is called once per frame
@@ -60,10 +73,32 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
   // Implement a method to transform the internal ids of locations.
   static string CustomIpfsTransform(IResourceLocation location)
   {
-    if (location.ResourceType == typeof(IAssetBundleResource) && location.InternalId.StartsWith("http"))
+    if (location.ResourceType == typeof(IAssetBundleResource))
     {
+      if (location.InternalId.StartsWith("http"))
+      {
+      }
+      else if (location.InternalId.EndsWith("bundle"))
+      {
+        //location.InternalId = remoteCatalogEndpoint + '/' + location.InternalId;
+        //Debug.Log($"Loading asset: {remoteCatalogEndpoint}/{location.InternalId}");
+        //return remoteCatalogEndpoint + '/' + location.InternalId;
+        return "http://localhost:8080/ipfs" + '/' + location.InternalId;
+      }
+      Debug.Log(location);
+      Debug.Log(location.InternalId);
+      Debug.Log(location.ProviderId);
       // @todo: We can here change the ipfs endpoint.
       //return location.InternalId + "?customQueryTag=customQueryValue";
+    }
+    else
+    {
+      /*
+      Debug.Log(location.ResourceType);
+      Debug.Log(location);
+      Debug.Log(location.InternalId);
+      Debug.Log(location.ProviderId);
+      */
     }
     return location.InternalId;
   }
