@@ -2,20 +2,40 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq; // For: Enumerable.First.
 using UnityEngine.AddressableAssets;
+using UnityEngine.AddressableAssets.Initialization;
+using UnityEngine.AddressableAssets.ResourceLocators; // For: IResourceLocator.
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceLocations; // For: IResourceLocation.
 using UnityEngine.ResourceManagement.ResourceProviders; // For: IAssetBundleResource.
-using UnityEngine.AddressableAssets.ResourceLocators; // For: IResourceLocator.
+using UnityEditor.AddressableAssets.Settings; // For: AddressableAssetSettingsDefaultObject.
 using UnityEngine;
 
 public class EcilosSpawnObjectAddressables : MonoBehaviour
 {
   bool isLoaded = false;
   const string defaultIpfsHost = "http://localhost:8080/ipfs";
-  const string defaultCatalogFilename = "catalog_0.1.json"; // @todo: To remove in favor of dynamic detection.
+  const string defaultCatalogFilename = "catalog_1.0.json"; // @todo: To remove in favor of dynamic detection.
   [SerializeField] private AssetLabelReference assetLabelReference;
   [SerializeField] public string cidRemoteFolderLoadPath;
   private string remoteIpfsHost = defaultIpfsHost;
+
+  public string GetDefaultCatalogName()
+  {
+    string versionedFileName = defaultCatalogFilename;
+    /* @todo
+    AddressableAssetSettings aaSettings = AddressableAssetSettingsDefaultObject.Settings;
+    if (aaSettings != null)
+    {
+      versionedFileName = aaSettings.profileSettings.EvaluateString(aaSettings.activeProfileId, "/catalog_" + builderInput.PlayerVersion);
+      Debug.Log("Versioned catalog file name: " + versionedFileName);
+    }
+    else
+    {
+      Debug.LogError("AddressableAssetSettings not found.");
+    }
+    */
+    return versionedFileName;
+  }
 
   // Start is called before the first frame update
   public IEnumerator Start()
@@ -44,7 +64,13 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
       Debug.Log("No resource locators found in Addressables settings.");
       //remoteIpfsHost = "http://localhost:8080/ipfs";
     }
-    Debug.Log($"Loading catalog at: {remoteIpfsHost}/{cidRemoteFolderLoadPath}/{defaultCatalogFilename}");
+    /*
+    string defaultCatalogName = AddressablesRuntimeProperties.EvaluateString("{CatalogName}");
+    var versionedFileName = aaSettings.profileSettings.EvaluateString(aaSettings.activeProfileId, "/catalog_" + builderInput.PlayerVersion);
+    Debug.Log("Default catalog name: " + defaultCatalogName);
+    */
+    string catalogFilename = GetDefaultCatalogName();
+    Debug.Log($"Loading catalog at: {remoteIpfsHost}/{cidRemoteFolderLoadPath}/{catalogFilename}");
     AsyncOperationHandle<IResourceLocator> handle = Addressables.LoadContentCatalogAsync(remoteIpfsHost + "/" + cidRemoteFolderLoadPath + "/" + defaultCatalogFilename, true);
     yield return handle;
   }
