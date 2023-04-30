@@ -11,14 +11,16 @@ using UnityEngine;
 public class EcilosSpawnObjectAddressables : MonoBehaviour
 {
   bool isLoaded = false;
+  const string defaultIpfsHost = "http://localhost:8080/ipfs";
+  const string defaultCatalogFilename = "catalog_0.1.json"; // @todo: To remove in favor of dynamic detection.
   [SerializeField] private AssetLabelReference assetLabelReference;
-  [SerializeField] public string remoteCatalogLoadPath;
-  private string remoteCatalogEndpoint;
+  [SerializeField] public string cidRemoteFolderLoadPath;
+  private string remoteIpfsHost = defaultIpfsHost;
 
   // Start is called before the first frame update
   public IEnumerator Start()
   {
-    if (remoteCatalogLoadPath.Length == 0)
+    if (cidRemoteFolderLoadPath.Length == 0)
     {
       yield return null;
     }
@@ -30,20 +32,20 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
       ResourceLocatorInfo locatorInfo = Addressables.GetLocatorInfo(locator);
       if (locatorInfo.CatalogLocation != null)
       {
-        remoteCatalogEndpoint = locatorInfo.CatalogLocation.ToString();
+        remoteIpfsHost = locatorInfo.CatalogLocation.ToString();
       }
       else
       {
-        remoteCatalogEndpoint = "http://localhost:8080/ipfs";
+        //remoteIpfsHost = "http://localhost:8080/ipfs";
       }
     }
     else
     {
       Debug.Log("No resource locators found in Addressables settings.");
-      remoteCatalogEndpoint = "http://localhost:8080/ipfs";
+      //remoteIpfsHost = "http://localhost:8080/ipfs";
     }
-    Debug.Log($"Loading catalog at: {remoteCatalogEndpoint}/{remoteCatalogLoadPath}");
-    AsyncOperationHandle<IResourceLocator> handle = Addressables.LoadContentCatalogAsync(remoteCatalogEndpoint + '/' + remoteCatalogLoadPath, true);
+    Debug.Log($"Loading catalog at: {remoteIpfsHost}/{cidRemoteFolderLoadPath}/{defaultCatalogFilename}");
+    AsyncOperationHandle<IResourceLocator> handle = Addressables.LoadContentCatalogAsync(remoteIpfsHost + "/" + cidRemoteFolderLoadPath + "/" + defaultCatalogFilename, true);
     yield return handle;
   }
 
@@ -52,9 +54,11 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
   {
     if (!isLoaded)
     {
+      /*
       AsyncOperationHandle<GameObject> asyncOpHandle = Addressables.LoadAssetAsync<GameObject>(assetLabelReference);
       asyncOpHandle.Completed += AsyncOpObjectLoaded;
       isLoaded = true;
+      */
     }
   }
 
@@ -80,10 +84,14 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
       }
       else if (location.InternalId.EndsWith("bundle"))
       {
-        //location.InternalId = remoteCatalogEndpoint + '/' + location.InternalId;
-        //Debug.Log($"Loading asset: {remoteCatalogEndpoint}/{location.InternalId}");
-        //return remoteCatalogEndpoint + '/' + location.InternalId;
-        return "http://localhost:8080/ipfs" + '/' + location.InternalId;
+        //location.InternalId = remoteIpfsHost + '/' + location.InternalId;
+        //Debug.Log($"Loading asset: {remoteIpfsHost}/{location.InternalId}");
+        //return remoteIpfsHost + '/' + location.InternalId;
+        var objInstance = FindObjectOfType<EcilosSpawnObjectAddressables>();
+        if (objInstance != null)
+        {
+          return defaultIpfsHost + "/" + objInstance.cidRemoteFolderLoadPath + "/" + location.InternalId;
+        }
       }
       Debug.Log(location);
       Debug.Log(location.InternalId);
@@ -93,12 +101,10 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
     }
     else
     {
-      /*
       Debug.Log(location.ResourceType);
       Debug.Log(location);
       Debug.Log(location.InternalId);
       Debug.Log(location.ProviderId);
-      */
     }
     return location.InternalId;
   }
@@ -111,32 +117,18 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
     Addressables.InternalIdTransformFunc = CustomIpfsTransform;
   }
 
-  /*
-  private string m_SourceFolder = "dataFiles";
-  public void AddFileLocatorToAddressables()
+  // @todo: Needs testing.
+  public void AddIpfsLocatorToAddressables()
   {
     // This example code creates ResourceLocationBase and adds it to the locator for each file.
     // https://docs.unity3d.com/Packages/com.unity.addressables@1.21/api/UnityEngine.AddressableAssets.Addressables.AddResourceLocator.html
-    if (!Directory.Exists(m_SourceFolder)) {
-      return;
-    }
-
-    ResourceLocationMap locator = new ResourceLocationMap(m_SourceFolder + "_FilesLocator", 12);
+    ResourceLocationMap locator = new ResourceLocationMap(cidRemoteFolderLoadPath, 12);
     string providerId = typeof(TextDataProvider).ToString();
-
-    string[] files = Directory.GetFiles(m_SourceFolder);
-    foreach (string filePath in files)
-    {
-      if (!filePath.EndsWith(".json"))
-        continue;
-      string keyForLoading = Path.GetFileNameWithoutExtension(filePath);
-      locator.Add(keyForLoading, new ResourceLocationBase(keyForLoading, filePath, providerId, typeof(string)));
-    }
+    locator.Add(cidRemoteFolderLoadPath, new ResourceLocationBase(cidRemoteFolderLoadPath, cidRemoteFolderLoadPath, providerId, typeof(string)));
     Addressables.AddResourceLocator(locator);
   }
-  */
 
-  /*
+  // @todo: Needs testing.
   private string m_DataFileName = "settings";
   public IEnumerator LoadDataUsingAddedLocator()
   {
@@ -146,5 +138,4 @@ public class EcilosSpawnObjectAddressables : MonoBehaviour
     yield return loadingHandle;
     Debug.Log("Load completed " + loadingHandle.Status + (loadingHandle.Status == AsyncOperationStatus.Succeeded ? ", with result " + loadingHandle.Result : ""));
   }
-  */
 }
